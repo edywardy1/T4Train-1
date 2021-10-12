@@ -68,6 +68,7 @@ def write_to_config():
 
 class T4Train(QtWidgets.QMainWindow):
     def __init__(self, ds_filename):
+        global MODEL
         super(T4Train, self).__init__()
         self.ds_filename=ds_filename
         uic.loadUi("ui_assets/ui_qtview.ui", self)
@@ -82,7 +83,11 @@ class T4Train(QtWidgets.QMainWindow):
                                             shell=True)
 
         # Start machine learning subprocess
-        self.ml_subprocess=subprocess.Popen("python ml.py",
+        if MODEL == "Classifier":
+            self.ml_subprocess=subprocess.Popen("python ml.py",
+                                            shell=True)
+        elif MODEL == "Regressor":
+            self.ml_subprocess=subprocess.Popen("python ml-r.py",
                                             shell=True)
 
         # DVS: how do we do this?
@@ -701,7 +706,10 @@ class T4Train(QtWidgets.QMainWindow):
             os.kill(self.ml_pid, signal.SIGINT)
 
         # Restart ml process
-        self.ml_subprocess=subprocess.Popen("python ml.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if MODEL == "Classifier":
+            self.ml_subprocess=subprocess.Popen("python ml.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        elif MODEL == "Regressor":
+            self.ml_subprocess=subprocess.Popen("python ml-r.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         while True:
             try:
                 self.ml_pid=utils.read_pid_num(tmp_path+"ml_pidnum.txt")
@@ -1120,8 +1128,12 @@ class T4Train(QtWidgets.QMainWindow):
 
     def check_pid_exist(self):
         """check if process ml and ds still alive"""
-        if not psutil.pid_exists(self.ml_pid) or not psutil.pid_exists(self.ds_pid):
-            self.error_message('Process ml.py or ds.py is dead. Please restart.')
+        if MODEL == "Classifier":
+            if not psutil.pid_exists(self.ml_pid) or not psutil.pid_exists(self.ds_pid):
+                self.error_message('Process ml.py or ds.py is dead. Please restart.')
+        elif MODEL == "Regressor":
+            if not psutil.pid_exists(self.ml_pid) or not psutil.pid_exists(self.ds_pid):
+                self.error_message('Process ml-r.py or ds.py is dead. Please restart.')
 
 
 if __name__=="__main__":
@@ -1165,6 +1177,10 @@ if __name__=="__main__":
     SAMPLE_RATE    =  int(config['DS'    ]['SAMPLE_RATE'    ])
 
     NUM_BINS       =  int(config['ML'    ]['NUM_BINS'       ])
+
+    # Choosing the machine learning model: classifier, regressor, etc. 
+
+    MODEL          =  str(config['MODEL' ]['training_model' ])
 
     # Get data collection .py filename
     ds_filename    =DS_FILENAMES[DS_FILE_NUM]
