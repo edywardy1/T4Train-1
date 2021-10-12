@@ -38,55 +38,10 @@ from sklearn.model_selection import KFold
 # Self-define functions
 import utils
 
-# Get PID
-pidnum=os.getpid()
-
-# Store PID
-f=open("ml_pidnum.txt", "w")
-f.write(str(pidnum))
-f.close()
-
-#================================================================
-# read in configurations
-config = configparser.ConfigParser()
-config.read('config.ini')
-
-INSTANCES = int(config['GLOBAL']['INSTANCES'])  # number of instances recorded when spacebar is hit
-FRAME_LENGTH = int(config['GLOBAL']['FRAME_LENGTH'])  # fixed size, need to adjust
-
-NUM_BINS = int(config['ML']['NUM_BINS'])  # feturization bins
-SAMPLE_RATE = int(config['DS']['SAMPLE_RATE'])
-
-DS_HANDLERS = config['DS']['DS_HANDLERS'][1:-1].split(',')
-DS_FILE_NUM = int(config['DS']['DS_FILE_NUM'])
-
-curr_algo_index = int(config['GLOBAL']['CURR_ALGO_INDEX'])
-
-# Get data collection method
-ds_handler = DS_HANDLERS[DS_FILE_NUM]
-
-# ================================================================
-
-is_training = False
-is_inferencing = False
-model = None
-algos = ['voting', 'mlp', 'svm (linear)', 'svm (poly)', 'svm (rbf)', 'rf']
-
-# algorithm and mode to run
-algo = algos[curr_algo_index]
-mode = 'regressor'
-
-#================================================================
-
-# set featurization type
-feat = utils.Featurization.Variance
-if "Microphone" in ds_handler:
-    feat = utils.Featurization.FFT
-if "Camera" in ds_handler:
-    feat = utils.Featurization.Raw
-feat_from_last_train = feat
 
 def save_model(curr_time):
+    global model
+    print("ml.py: saving model")
     """Saves model when user presses 'S'."""
     np.save('saved_files/{}/model'.format(curr_time), model)
 
@@ -95,7 +50,6 @@ def init_machine_learning(algo='voting', mode='classifier'):
     """Initializes machine learning algorithm."""
 
     # Based on algo variable, determines respective classifer and regressor
-
     if algo == 'voting':
         mlpclf = MLPClassifier()
         mlpreg = MLPRegressor()
@@ -106,7 +60,7 @@ def init_machine_learning(algo='voting', mode='classifier'):
         clf = VotingClassifier(estimators=[('mlp', mlpclf),
                                            ('svm', svmclf),
                                            ('rf', rfclf)],
-                               voting='hard')
+                               voting=   'hard')
         reg = VotingRegressor([('mlp', mlpreg),
                                ('svm', svmreg),
                                ('rf', rfreg)])
@@ -138,23 +92,28 @@ def init_machine_learning(algo='voting', mode='classifier'):
 
 
 def confusion_matrix():
-    clf_conf = init_machine_learning(algos[curr_algo_index], mode)
+    global tmp_path
+    global algos, curr_algo_index, mode
+
+    clf_conf=init_machine_learning(algos[curr_algo_index], mode)
     print("init ml for confusion")
-    # load training data
+    
+    # Load training data
     try:
-        training_data = np.load('training_data.npy').astype('float')
-        training_labels = np.load('training_labels.npy')
+        training_data  =np.load(tmp_path+'training_data.npy').astype('float')
+        training_labels=np.load(tmp_path+'training_labels.npy')
     except Exception as e:
         print(e)
         return
-    X_train = []
-    Y_train = []
+    X_train=[]
+    Y_train=[]
     # featurizes the data
+    global feat, NUM_BINS, SAMPLE_RATE
     for i in range(0, np.shape(training_data)[0]):
         for j in range(0, np.shape(training_data)[1]):
-            tmptrain = training_data[i, j, :, :-2]
-            tmptrain = np.ravel(tmptrain)
-            tmptrain = utils.featurize(tmptrain, featurization_type=feat, numbins=NUM_BINS, sample_rate=SAMPLE_RATE)
+            tmptrain=training_data[i, j, :, :-2]
+            tmptrain=np.ravel(tmptrain)
+            tmptrain=utils.featurize(tmptrain, featurization_type=feat, numbins=NUM_BINS, sample_rate=SAMPLE_RATE)
             X_train.append(tmptrain)
             Y_train.append(training_labels[i])
 
@@ -171,17 +130,18 @@ def confusion_matrix():
     cnf=[]
     # test train split
     for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
+        X_train, X_test=X[train_index], X[test_index]
+        y_train, y_test=y[train_index], y[test_index]
+
         clf_conf.fit(X_train,y_train.ravel()) # trains the model
-        tmpacc = clf_conf.score(X_test,y_test) # gets the accuracy of the classifier
-        y_pred = clf_conf.predict(X_test) # classification
+        tmpacc=clf_conf.score(X_test,y_test) # gets the accuracy of the classifier
+        y_pred=clf_conf.predict(X_test) # classification
         cnf.append(sk_confusion(y_test,y_pred)) # creates confusion matrix
         acc.append(tmpacc)
 
-    finalacc, finalcnf = [], []
+    finalacc, finalcnf=[], []
     finalacc.append(np.mean(acc))
-    totalcnf = np.sum(cnf,axis=0)
+    totalcnf=np.sum(cnf,axis=0)
 
     newcnf = np.copy(totalcnf)
     for i in range(0,numclasses):
@@ -190,56 +150,63 @@ def confusion_matrix():
     finalcnf = np.mean(finalcnf,axis=0)
     np.savetxt('confusion_matrix.csv', finalcnf, delimiter=',')
 
+    return
+
 def feature_importances():
     # load training data
+    global tmp_path
     try:
-        training_data = np.load('training_data.npy').astype(np.float)
-        training_labels = np.load('training_labels.npy')
+        training_data  =np.load(tmp_path+'training_data.npy').astype(np.float)
+        training_labels=np.load(tmp_path+'training_labels.npy')
     except Exception as e:
         print(e)
         return
-    X_train = []
-    Y_train = []
+
+    X_train=[]
+    Y_train=[]
     # featurizes the data
+    global feat, NUM_BINS, SAMPLE_RATE
     for i in range(0, np.shape(training_data)[0]):
         for j in range(0, np.shape(training_data)[1]):
-            tmptrain = training_data[i, j, :, :-2] # cut out channel index flags
-            tmptrain = utils.featurize(tmptrain, featurization_type=feat, numbins=NUM_BINS, sample_rate=SAMPLE_RATE)
+            tmptrain=training_data[i, j, :, :-2] # Cut out channel index flags
+            tmptrain=utils.featurize(tmptrain, featurization_type=feat, numbins=NUM_BINS, sample_rate=SAMPLE_RATE)
             X_train.append(tmptrain)
             Y_train.append(training_labels[i])
 
-    X_train = np.array(X_train)[:, :, 0]
-    Y_train = np.array(Y_train)
+    X_train=np.array(X_train)[:, :, 0]
+    Y_train=np.array(Y_train)
 
-    le = preprocessing.LabelEncoder()
+    le=preprocessing.LabelEncoder()
     le.fit(Y_train)
-    Y_train = le.transform(Y_train)
+    Y_train=le.transform(Y_train)
 
-    model = init_machine_learning('rf', 'classifier') # initializes the machine learning model learning classifier to rf 
+    model=init_machine_learning('rf', 'classifier') # initializes the machine learning model learning classifier to rf 
     model.fit(X_train, Y_train) # trains the model
-    np.savetxt('feature_importances.csv', model.feature_importances_, delimiter=',')
-
+    np.savetxt(tmp_path+'feature_importances.csv', model.feature_importances_, delimiter=',')
 
 def read_message():
     """Handles ML commands written by ui.py."""
-    global is_training, le, model, is_training, is_inferencing, \
-                    curr_algo_index, algo
+    global is_training, is_inferencing
+    global curr_algo_index, algos, algo
+    global le, model
 
     # tests to see if the file can be open  
+    global tmp_path
 
     try:
-        f = open("ml_cmd.txt", "r")
-        cmd = f.read()
+        f=open(tmp_path+"ml_cmd.txt", "r")
+        cmd=f.read()
         f.close()
     except Exception as e:
         return
         
     try:
-        with open("feat.txt", "r") as f:
-            feat = utils.Featurization(f.read())
-    except Exception as e: # if no file, assume raw by default
-#        print("Error: unable to read featurization method ml-r.py")
-        feat = utils.Featurization.Raw
+        with open(tmp_path+"feat.txt", "r") as f:
+            feat=utils.Featurization(f.read())
+    except Exception as e:
+        # If no file, assume raw by default
+        # print("Error: unable to read featurization method ml.py")
+        feat=utils.Featurization.Raw
 
     if cmd == 'TRAIN':
         is_training = True
@@ -247,7 +214,7 @@ def read_message():
         model = None
     elif cmd == 'FEATURE_IMPORTANCE':
         feature_importances()
-    elif 'TOGGLE_ALGO' in cmd:
+    elif cmd == 'TOGGLE_ALGO':
         curr_algo_index = int(cmd[-1])
         algo = algos[curr_algo_index]
         model = None
@@ -263,8 +230,8 @@ def read_message():
         curr_time = cmd.split()[1].strip()
         save_model(curr_time)
     try:
-        f = open("ml_cmd.txt", "w")
-        f.write("")
+        f=open(tmp_path+"ml_cmd.txt", "w")
+        f.write("") 
         f.close()
     except Exception as e:
         return
@@ -277,10 +244,12 @@ def receive_interrupt(signum, stack):
 
 def ml_train():
     """Trains the ml algorithm."""
+    global tmp_path
     global feat_from_last_train, feat
+    global NUM_BINS, SAMPLE_RATE
 
     try:
-        training_data = np.load('training_data.npy').astype(np.float)
+        training_data=np.load(tmp_path+'training_data.npy').astype(np.float)
     except Exception as e:
         print(e)
         return None, None
@@ -288,7 +257,7 @@ def ml_train():
 
     if "Camera" not in ds_handler:
         training_data = training_data[:, :, :, :-2] # cut out channel indices stored in last two cols of all rows
-    training_labels = np.load('training_labels.npy')
+    training_labels=np.load(tmp_path+'training_labels.npy')
     X_train = []
     Y_train = []
 
@@ -303,13 +272,8 @@ def ml_train():
     X_train = np.array(X_train)[:, :, 0]
     Y_train = np.array(Y_train)
 
-    if mode=='classifier':
-
-        le = preprocessing.LabelEncoder()
-        le.fit(Y_train)
-        Y_train = le.transform(Y_train)
-    if mode=='regressor':
-        le = preprocessing.LabelEncoder()
+    
+    le = preprocessing.LabelEncoder()
         
     # initializes machine learning classifier/regressor  
     print(Y_train)
@@ -321,16 +285,19 @@ def ml_train():
 
 def ml_main():
     """Handles training and predicting of ml algorithm."""
-    global is_training, is_inferencing, le, model, feat_from_last_train
+    global is_training, is_inferencing
+    global le, model, feat_from_last_train
+    global tmp_path
 
     if is_training:
         le, model = ml_train()
         is_training = False
         is_inferencing = True
+        print("ml-r.py: DONE training")
 
     if is_inferencing:
         try:
-            X_test = np.load('tmpframe.npy').astype(np.float)
+            X_test=np.load(tmp_path+'tmp_frame.npy').astype(np.float)
             assert(X_test.size != 0)
             assert(le is not None)
             assert(model is not None)
@@ -340,38 +307,108 @@ def ml_main():
         X_test = X_test[:,:-2] # cut out columns with channel indices
         X_test = utils.featurize(X_test, featurization_type=feat_from_last_train, numbins=NUM_BINS, sample_rate=SAMPLE_RATE)
         # write prediction to file
-        if mode=='classifer':
-            prediction = le.inverse_transform(model.predict(X_test.T))
-        if mode=='regressor':
-            prediction = model.predict(X_test.T)
-            print(prediction)
-        np.save('prediction', np.array(prediction))
+       
+    
+        prediction = model.predict(X_test.T)
+        print(prediction)
+        np.save(tmp_path+'prediction', np.array(prediction))
 
 
-timeloop_ml = Timeloop()
+if __name__=="__main__":
+    print('ml.py: Started')
+
+    global tmp_path
+    tmp_path="tmp/"
+    if sys.platform.startswith('win'):
+        tmp_path=os.path.join("tmp", "")
+    # tmp_path=""
+
+    # Write PID to file
+    pidnum=os.getpid()
+    with open(tmp_path+"ml_pidnum.txt", "w") as f:
+        f.write(str(pidnum))
+
+    # Clear command txt
+    with open(tmp_path+"ml_cmd.txt", "w") as f:
+        f.write("")
+
+    # ================================================================
+    # Read in configurations
+    config=configparser.ConfigParser()
+    config.read('config.ini')
+
+    global INSTANCES, FRAME_LENGTH
+    global NUM_BINS, SAMPLE_RATE
+    global curr_algo_index
+    global ds_handler
+
+    INSTANCES      =int(config['GLOBAL']['INSTANCES'      ])  # Number of instances recorded when spacebar is hit
+    FRAME_LENGTH   =int(config['GLOBAL']['FRAME_LENGTH'   ])  # Fixed size, need to adjust
+
+    NUM_BINS       =int(config['ML'    ]['NUM_BINS'       ])  # Feturization bins
+    SAMPLE_RATE    =int(config['DS'    ]['SAMPLE_RATE'    ])
+
+    DS_HANDLERS    =    config['DS'    ]['DS_HANDLERS'    ][1:-1].split(',')
+    DS_FILE_NUM    =int(config['DS'    ]['DS_FILE_NUM'    ])
+
+    curr_algo_index=int(config['GLOBAL']['CURR_ALGO_INDEX'])
+
+    # Get data collection method
+    ds_handler     =DS_HANDLERS[DS_FILE_NUM]
+
+    # ================================================================
+
+    global is_training, is_inferencing
+    global model, algos
+    global algo, mode
+
+    is_training   =False
+    is_inferencing=False
+    model         =None
+    algos         =['voting', 'mlp', 'svm (linear)', 'svm (poly)', 'svm (rbf)', 'rf']
+
+    # Algorithm and mode to run
+    algo          =algos[curr_algo_index]
+    mode          ='regressor'
+
+    # Set featurization type
+    global feat, feat_from_last_train
+    feat=utils.Featurization.Variance
+    if "Microphone" in ds_handler:
+        feat=utils.Featurization.FFT
+    if "Camera" in ds_handler:
+        feat=utils.Featurization.Raw
+    feat_from_last_train=feat
+
+    # # Setup crtl+c catch function
+    # signal.signal(signal.SIGINT, receive_interrupt)
+
+    # print("ml.py: Start ml forloop")
+    # while True:
+    #     ml_main()
+
+    # sys.exit()
 
 
-# adds timeloop job for checking for ml commans
-@timeloop_ml.job(interval=timedelta(seconds=0.3))
-def read_message_wrapper():
-    read_message()
+    print("ml-r.py: Start ml forloop")
+    if utils.does_support_signals():
+        signal.signal(signal.SIGINT, receive_interrupt)
 
+        while True:
+            ml_main()
+    else:
+        timeloop_ml=Timeloop()
+        
+        # adds timeloop job for checking for ml commans
+        @timeloop_ml.job(interval=timedelta(seconds=0.3))
+        def read_message_wrapper():
+            read_message()
 
-# adds timeloop job for training and predicting
-@timeloop_ml.job(interval=timedelta(seconds=0.2))
-def ml_main_wrapper():
-    ml_main()
+        # adds timeloop job for training and predicting
+        @timeloop_ml.job(interval=timedelta(seconds=0.2))
+        def ml_main_wrapper():
+            ml_main()
 
+        timeloop_ml.start(block=True)
 
-if utils.does_support_signals():
-    signal.signal(signal.SIGINT, receive_interrupt)
-
-    while True:
-        ml_main()
-
-
-if not utils.does_support_signals():
-    # starts the timeloop jobs if OS does not support signals
-    timeloop_ml.start(block=True)
-
-sys.exit()
+    sys.exit()
