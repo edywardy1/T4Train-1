@@ -64,7 +64,7 @@ def write_to_config():
     config.set("GLOBAL", "ALGO_SUGGESTION", str(int(ALGO_SUGGESTION)))
     with open("config.ini", "w") as cf:
         config.write(cf)
-    cf.close()
+        cf.close()
 
 class T4Train(QtWidgets.QMainWindow):
     def __init__(self, ds_filename):
@@ -1135,6 +1135,7 @@ if __name__=="__main__":
     #================================================================
     # Create splash config editor window and read in configuration
     config=configparser.ConfigParser()
+    #initial read of config to know if we should open splash
     config.read('config.ini')
 
     OPEN_SPLASH      =int(config['GLOBAL']['OPEN_SPLASH'])
@@ -1144,6 +1145,9 @@ if __name__=="__main__":
         splash_window.setFont(QFont("Verdana", 11))
         splash_window.exec_() 
 
+    
+    #reread config after splash screen
+    config.read('config.ini')
     OPEN_SPLASH    =  int(config['GLOBAL']['OPEN_SPLASH'    ])
     LABELS         =      config['GLOBAL']['LABELS'         ][1:-1].split(', ')
     INSTANCES      =  int(config['GLOBAL']['INSTANCES'      ])
