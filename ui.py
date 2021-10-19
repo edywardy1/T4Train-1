@@ -156,13 +156,14 @@ class T4Train(QtWidgets.QMainWindow):
             self.P0 = 1
             self.R = 0.1
             self.K = 0
+            self.loaded_prediction = 50
             
             # Slider parts
             int_label = [float(i) for i in LABELS]
             self.slider_min = min(int_label)
             self.slider_max = max(int_label)
 
-            self.loaded_prediction = self.slider_min / 2 + self.slider_max / 2
+            
 
             self.slider_f = QSlider(Qt.Horizontal)
             self.slider_f.setMaximum((int)(max(int_label)))
@@ -510,7 +511,7 @@ class T4Train(QtWidgets.QMainWindow):
                 if training_model == "Regressor":
                     # Kalman Filter Implementation
                     self.K = self.P0 / (self.P0 + self.R)
-                    self.X0 = 20 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
+                    self.X0 = 100 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
                     self.P0 = (1 - self.K) * self.P0
                     self.loaded_prediction = self.X0
 
