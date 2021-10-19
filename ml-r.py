@@ -297,7 +297,7 @@ def ml_main():
 
     if is_inferencing:
         try:
-            X_test=np.load(tmp_path+'tmp_frame.npy').astype(np.float)
+            X_test=np.load(tmp_path+'tmp_frame.npy').astype(float)
             assert(X_test.size != 0)
             assert(le is not None)
             assert(model is not None)

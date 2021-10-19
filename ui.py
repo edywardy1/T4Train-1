@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui     import QPalette, QColor
 
 import pyqtgraph as pg
+from PyQt5.QtWidgets import QSlider
 
 from ui_assets.ui_labels import Labels
 from ui_assets.ui_steps  import StepsBar
@@ -68,6 +69,7 @@ def write_to_config():
 
 class T4Train(QtWidgets.QMainWindow):
     def __init__(self, ds_filename):
+        global training_model
         super(T4Train, self).__init__()
         self.ds_filename=ds_filename
         uic.loadUi("ui_assets/ui_qtview.ui", self)
@@ -96,7 +98,7 @@ class T4Train(QtWidgets.QMainWindow):
 
         # Allow wait time for subprocesses to write their pid numbers to file
         time.sleep(SETUP_TIME)
-
+        
         global tmp_path
         while True:
             try:
@@ -148,6 +150,27 @@ class T4Train(QtWidgets.QMainWindow):
         # List of QActions in AlgoMenu
         self.algo_action_list=[]
 
+        if training_model == "Regressor":
+            # Kalman Filter set up
+            self.X0 = 0
+            self.P0 = 1
+            self.R = 0.1
+            self.K = 0
+            
+            # Slider parts
+            int_label = [float(i) for i in LABELS]
+            self.slider_min = min(int_label)
+            self.slider_max = max(int_label)
+
+            self.loaded_prediction = self.slider_min / 2 + self.slider_max / 2
+
+            self.slider_f = QSlider(Qt.Horizontal)
+            self.slider_f.setMaximum((int)(max(int_label)))
+            self.slider_f.setMinimum((int)(min(int_label)))
+            self.slider_f.setValue((int)(max(int_label)/2) + (int)(min(int_label)/2))
+            self.slider_f.setFixedWidth(self.width() - self.labels.width() + 400)
+
+
         print("PIDs of ui, ds, ml:", os.getpid(), self.ds_pid, self.ml_pid)
 
         # DVS: what is this?
@@ -160,6 +183,8 @@ class T4Train(QtWidgets.QMainWindow):
         """Called after class constructor."""
         self.centralwidget.setContentsMargins(20, 0, 20, 0)
         self.footer.setContentsMargins(0,10,0,0)
+        self.slider_f.setContentsMargins(0, 10, 0, 0)
+
         self.fontsize_labels=fontsize_normal
         self.fontsize_footer=fontsize_normal + 8
         self.MainVL.setSpacing(0)
@@ -190,6 +215,7 @@ class T4Train(QtWidgets.QMainWindow):
         self.TopGL.addWidget(self.labels,     1, 1, alignment=QtCore.Qt.AlignLeft)
         self.FootGL.addWidget(self.footer,    1, 1, alignment=QtCore.Qt.AlignHCenter)
         self.FootGL.addWidget(self.fps_label, 1, 1, alignment=QtCore.Qt.AlignRight)
+        self.FootGL.addWidget(self.slider_f,  1, 1, alignment=QtCore.Qt.AlignHCenter)
 
         # Set graph layouts
         self.Graphs       =QtWidgets.QWidget()
@@ -475,11 +501,28 @@ class T4Train(QtWidgets.QMainWindow):
 
     def update_prediction(self, *args):
         global tmp_path
+        global training_model
 
         """Write prediction."""
         if self.is_predicting:
             try:
                 text_str="Current Prediction: {}".format(np.load(tmp_path+'prediction.npy')[0])
+                if training_model == "Regressor":
+                    # Kalman Filter Implementation
+                    self.K = self.P0 / (self.P0 + self.R)
+                    self.X0 = 20 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
+                    self.P0 = (1 - self.K) * self.P0
+                    self.loaded_prediction = self.X0
+
+                    text_str="Current Prediction: {}".format(self.loaded_prediction)
+                    slider_position = int(self.loaded_prediction)
+                    self.slider_f.setValue(slider_position)
+                    print("---------------------------------- regressor predicted value is ", int(slider_position))
+                    if (int(self.loaded_prediction) <= self.slider_min):
+                        text_str = "calibrating"
+                    elif (int(self.loaded_prediction) >= self.slider_max):
+                        text_str = "calibrating"
+                    
                 self.footer.setText(text_str)
             except Exception as e:
                 return
@@ -522,7 +565,7 @@ class T4Train(QtWidgets.QMainWindow):
                 pass
         try:
             global tmp_path
-            self.curr_frame=np.load(tmp_path+'tmp_frame.npy').astype(np.float)
+            self.curr_frame=np.load(tmp_path+'tmp_frame.npy').astype(float)
             npy_data=self.curr_frame[:, :-2]
         except Exception as e:
             return
