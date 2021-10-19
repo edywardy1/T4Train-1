@@ -156,7 +156,7 @@ def feature_importances():
     # load training data
     global tmp_path
     try:
-        training_data  =np.load(tmp_path+'training_data.npy').astype(np.float)
+        training_data  =np.load(tmp_path+'training_data.npy').astype(float)
         training_labels=np.load(tmp_path+'training_labels.npy')
     except Exception as e:
         print(e)
@@ -249,7 +249,7 @@ def ml_train():
     global NUM_BINS, SAMPLE_RATE
 
     try:
-        training_data=np.load(tmp_path+'training_data.npy').astype(np.float)
+        training_data=np.load(tmp_path+'training_data.npy').astype(float)
     except Exception as e:
         print(e)
         return None, None

@@ -156,7 +156,7 @@ class T4Train(QtWidgets.QMainWindow):
             self.P0 = 1
             self.R = 0.1
             self.K = 0
-            self.loaded_prediction = 50
+            # self.loaded_prediction = 50
             
             # Slider parts
             int_label = [float(i) for i in LABELS]
@@ -184,7 +184,8 @@ class T4Train(QtWidgets.QMainWindow):
         """Called after class constructor."""
         self.centralwidget.setContentsMargins(20, 0, 20, 0)
         self.footer.setContentsMargins(0,10,0,0)
-        self.slider_f.setContentsMargins(0, 10, 0, 0)
+        if training_model == "Regressor":
+            self.slider_f.setContentsMargins(0, 10, 0, 0)
 
         self.fontsize_labels=fontsize_normal
         self.fontsize_footer=fontsize_normal + 8
@@ -216,7 +217,8 @@ class T4Train(QtWidgets.QMainWindow):
         self.TopGL.addWidget(self.labels,     1, 1, alignment=QtCore.Qt.AlignLeft)
         self.FootGL.addWidget(self.footer,    1, 1, alignment=QtCore.Qt.AlignHCenter)
         self.FootGL.addWidget(self.fps_label, 1, 1, alignment=QtCore.Qt.AlignRight)
-        self.FootGL.addWidget(self.slider_f,  1, 1, alignment=QtCore.Qt.AlignHCenter)
+        if training_model == "Regressor":
+            self.FootGL.addWidget(self.slider_f,  1, 1, alignment=QtCore.Qt.AlignHCenter)
 
         # Set graph layouts
         self.Graphs       =QtWidgets.QWidget()
@@ -510,19 +512,28 @@ class T4Train(QtWidgets.QMainWindow):
                 text_str="Current Prediction: {}".format(np.load(tmp_path+'prediction.npy')[0])
                 if training_model == "Regressor":
                     # Kalman Filter Implementation
-                    self.K = self.P0 / (self.P0 + self.R)
-                    self.X0 = 100 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
-                    self.P0 = (1 - self.K) * self.P0
-                    self.loaded_prediction = self.X0
+                    self.loaded_prediction = np.load(tmp_path+'prediction.npy')[0]
+                    if self.ds_filename == "ds_microphone":
+                    
+                    
+                        # self.K = 1 / (self.P0 + self.R)
 
-                    text_str="Current Prediction: {}".format(self.loaded_prediction)
-                    slider_position = int(self.loaded_prediction)
-                    self.slider_f.setValue(slider_position)
-                    print("---------------------------------- regressor predicted value is ", int(slider_position))
-                    if (int(self.loaded_prediction) <= self.slider_min):
-                        text_str = "calibrating"
-                    elif (int(self.loaded_prediction) >= self.slider_max):
-                        text_str = "calibrating"
+
+                        # self.X0 = 20 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
+                        # self.P0 = (1 - self.K) * self.P0
+                        # self.loaded_prediction = self.X0
+                        
+
+                        # text_str="Current Prediction: {}".format(self.loaded_prediction)
+                    
+                        
+                        self.slider_f.setValue(int(self.loaded_prediction))
+                        print("--------------------------------------------", self.loaded_prediction)
+                        # print("---------------------------------- regressor predicted value is ", int(slider_position))
+                        if (int(self.loaded_prediction) <= self.slider_min):
+                            text_str = "Out of Range"
+                        elif (int(self.loaded_prediction) >= self.slider_max):
+                            text_str = "Out of Range"
                     
                 self.footer.setText(text_str)
             except Exception as e:

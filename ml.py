@@ -157,7 +157,7 @@ def feature_importances():
 
     # Load training data
     try:
-        training_data  =np.load(tmp_path+'training_data.npy').astype(np.float)
+        training_data  =np.load(tmp_path+'training_data.npy').astype(float)
         training_labels=np.load(tmp_path+'training_labels.npy')
     except Exception as e:
         print(e)
@@ -252,7 +252,7 @@ def ml_train():
     global NUM_BINS, SAMPLE_RATE
 
     try:
-        training_data=np.load(tmp_path+'training_data.npy').astype(np.float)
+        training_data=np.load(tmp_path+'training_data.npy').astype(float)
     except Exception as e:
         print(e)
         return None, None
@@ -305,7 +305,7 @@ def ml_main():
     
     if is_inferencing:
         try:
-            X_test=np.load(tmp_path+'tmp_frame.npy').astype(np.float)
+            X_test=np.load(tmp_path+'tmp_frame.npy').astype(float)
             assert(X_test.size!=0)
             assert(le is not None)
             assert(model is not None)
