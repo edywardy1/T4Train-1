@@ -68,7 +68,6 @@ def write_to_config():
 
 class T4Train(QtWidgets.QMainWindow):
     def __init__(self, ds_filename):
-        global MODEL
         super(T4Train, self).__init__()
         self.ds_filename=ds_filename
         uic.loadUi("ui_assets/ui_qtview.ui", self)
@@ -83,10 +82,10 @@ class T4Train(QtWidgets.QMainWindow):
                                             shell=True)
 
         # Start machine learning subprocess
-        if MODEL == "Classifier":
+        if training_model == "Classifier":
             self.ml_subprocess=subprocess.Popen("python ml.py",
                                             shell=True)
-        elif MODEL == "Regressor":
+        elif training_model == "Regressor":
             self.ml_subprocess=subprocess.Popen("python ml-r.py",
                                             shell=True)
 
@@ -693,6 +692,7 @@ class T4Train(QtWidgets.QMainWindow):
     def on_retrain(self):
         global does_support_signals
         global tmp_path
+        global training_model
         """T for Retrain."""
         self.is_predicting=False
         self.model_exists =False
@@ -706,9 +706,9 @@ class T4Train(QtWidgets.QMainWindow):
             os.kill(self.ml_pid, signal.SIGINT)
 
         # Restart ml process
-        if MODEL == "Classifier":
+        if training_model == "Classifier":
             self.ml_subprocess=subprocess.Popen("python ml.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        elif MODEL == "Regressor":
+        elif training_model == "Regressor":
             self.ml_subprocess=subprocess.Popen("python ml-r.py", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         while True:
             try:
@@ -1127,11 +1127,12 @@ class T4Train(QtWidgets.QMainWindow):
             quit()
 
     def check_pid_exist(self):
+        global training_model
         """check if process ml and ds still alive"""
-        if MODEL == "Classifier":
+        if training_model == "Classifier":
             if not psutil.pid_exists(self.ml_pid) or not psutil.pid_exists(self.ds_pid):
                 self.error_message('Process ml.py or ds.py is dead. Please restart.')
-        elif MODEL == "Regressor":
+        elif training_model == "Regressor":
             if not psutil.pid_exists(self.ml_pid) or not psutil.pid_exists(self.ds_pid):
                 self.error_message('Process ml-r.py or ds.py is dead. Please restart.')
 
@@ -1142,7 +1143,10 @@ if __name__=="__main__":
     global ALGOS, ALGO_SUGGESTION, CURR_ALGO_INDEX
     global DS_HANDLERS, DS_FILENAMES, DS_FILE_NUM, SAMPLE_RATE
     global NUM_BINS
+    global TRAINING_MODELS, TRAINING_NUM
     global ds_filename, ds_handler
+    global training_model
+
 
     #================================================================
     # Create splash config editor window and read in configuration
@@ -1178,13 +1182,14 @@ if __name__=="__main__":
 
     NUM_BINS       =  int(config['ML'    ]['NUM_BINS'       ])
 
-    # Choosing the machine learning model: classifier, regressor, etc. 
-
-    MODEL          =  str(config['MODEL' ]['training_model' ])
-
+    TRAINING_MODELS=  config['TRAINING_MODEL' ]['training_models' ][1:-1].split(', ')
+    TRAINING_NUM      =  int(config['TRAINING_MODEL']['training_model_num'])
     # Get data collection .py filename
     ds_filename    =DS_FILENAMES[DS_FILE_NUM]
     ds_handler     =DS_HANDLERS[DS_FILE_NUM]
+
+    # Picking the training model
+    training_model =TRAINING_MODELS[TRAINING_NUM]
 
     print("Config read done.")
     #================================================================
