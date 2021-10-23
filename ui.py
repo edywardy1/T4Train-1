@@ -215,7 +215,7 @@ class T4Train(QtWidgets.QMainWindow):
         # Add widgets
         self.TopGL.addWidget(self.stepsbar,   1, 1, alignment=QtCore.Qt.AlignRight)
         self.TopGL.addWidget(self.labels,     1, 1, alignment=QtCore.Qt.AlignLeft)
-        self.FootGL.addWidget(self.footer,    1, 1, alignment=QtCore.Qt.AlignHCenter)
+        self.FootGL.addWidget(self.footer,    10, 1, alignment=QtCore.Qt.AlignLeft)
         self.FootGL.addWidget(self.fps_label, 1, 1, alignment=QtCore.Qt.AlignRight)
         if training_model == "Regressor":
             self.FootGL.addWidget(self.slider_f,  1, 1, alignment=QtCore.Qt.AlignHCenter)
