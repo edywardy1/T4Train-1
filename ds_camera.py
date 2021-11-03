@@ -41,7 +41,7 @@ from timeloop import Timeloop
 # Self-define functions
 import utils
 
-
+tmp_path = "tmp/"
 #================================================================
 # read in configurations
 config=configparser.ConfigParser()
@@ -202,7 +202,7 @@ def camera_data():
                     training_data_frame_counter=0
 
                     # get label
-                    f=open("current_label.txt", "r")
+                    f=open(tmp_path + "current_label.txt", "r")
                     current_label=f.read().strip()
                     f.close()
 
@@ -251,7 +251,7 @@ def receive_interrupt(signum, stack):
 
 def read_message():
     try:
-        f = open("ds_cmd.txt", "r")
+        f = open(tmp_path + "ds_cmd.txt", "r")
         cmd = f.read()
         f.close()
     except Exception as e:
@@ -265,7 +265,7 @@ def read_message():
         f.close()
         os._exit(0)
 
-    f = open("ds_cmd.txt", "w")
+    f = open(tmp_path + "ds_cmd.txt", "w")
     f.write("")
     f.close()
 
@@ -274,7 +274,7 @@ if __name__ == '__main__':
 
     # write PID to file
     pidnum = os.getpid()
-    f = open("ds_pidnum.txt", "w")
+    f = open(tmp_path + "ds_pidnum.txt", "w")
     f.write(str(pidnum))
     f.close()
 
