@@ -515,21 +515,18 @@ class T4Train(QtWidgets.QMainWindow):
                     self.loaded_prediction = np.load(tmp_path+'prediction.npy')[0]
                     if self.ds_filename == "ds_microphone":
                     
-                    
                         # self.K = 1 / (self.P0 + self.R)
-
-
                         # self.X0 = 20 * self.K * (int(self.loaded_prediction) - self.X0) + self.X0
                         # self.P0 = (1 - self.K) * self.P0
                         # self.loaded_prediction = self.X0
-                        
-
                         # text_str="Current Prediction: {}".format(self.loaded_prediction)
-                    
-                        
                         self.slider_f.setValue(int(self.loaded_prediction))
-                        print("--------------------------------------------", self.loaded_prediction)
-                        # print("---------------------------------- regressor predicted value is ", int(slider_position))
+                        
+                        if (int(self.loaded_prediction) <= self.slider_min):
+                            text_str = "Out of Range"
+                        elif (int(self.loaded_prediction) >= self.slider_max):
+                            text_str = "Out of Range"
+                    elif self.ds_filename == "ds_nano33":
                         if (int(self.loaded_prediction) <= self.slider_min):
                             text_str = "Out of Range"
                         elif (int(self.loaded_prediction) >= self.slider_max):
