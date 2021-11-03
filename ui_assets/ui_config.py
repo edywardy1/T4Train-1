@@ -298,10 +298,8 @@ class QDialogSplash(QDialog):
        config.set("GLOBAL", "CURR_ALGO_INDEX", str(ALGOS.index(self.algo.currentText())))
  
        config.set("DS", "DS_FILE_NUM", str(DS_HANDLERS.index(self.ds.currentText())))
-       print("\n\n\n" + str(DS_HANDLERS.index(self.ds.currentText())) + "\n\n\n")
 
        config.set("TRAINING_MODEL", "training_model_num", str(TRAINING_MODELS.index(self.model.currentText())))
-       print("\n\n\n" + str(TRAINING_MODELS.index(self.model.currentText())) + "\n\n\n")
  
        if self.sr_box.text():
            config.set("DS", "SAMPLE_RATE", str(self.sr_box.text()))
