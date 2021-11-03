@@ -402,7 +402,6 @@ class T4Train(QtWidgets.QMainWindow):
             #      ml.py can never finish calculate conf matrix!
             #      added sleep 5 sec to wait for ml.py to finish
             #      but nmeed a much better solution
-            time.sleep(5)
         # S
         elif event.key()==QtCore.Qt.Key_S:
             self.stepsbar.set_state(2, 1)
@@ -412,7 +411,6 @@ class T4Train(QtWidgets.QMainWindow):
             #      ml.py can never finish calculate conf matrix!
             #      added sleep 5 sec to wait for ml.py to finish
             #      but nmeed a much better solution
-            time.sleep(5)
         # T
         elif event.key()==QtCore.Qt.Key_T:
             suggested_algo=ALGOS[CURR_ALGO_INDEX]
@@ -450,24 +448,26 @@ class T4Train(QtWidgets.QMainWindow):
         # I
         elif event.key()==QtCore.Qt.Key_I:
             self.on_feature_importance()
+            should_stop_predicting=False
             # DVS: this is insane, send feat import command
             #      and send stop predict immediately
             #      ml.py can never finish its calculation!
             #      added sleep 5 sec to wait for ml.py to finish
             #      but nmeed a much better solution
-            time.sleep(5)
+            #time.sleep(5)
         # M
         elif event.key()==QtCore.Qt.Key_M:
             self.on_ml_algo_toggle()
         # C
         elif event.key()==QtCore.Qt.Key_C:
             self.on_confusion_matrix()
+            should_stop_predicting=False
             # DVS: this is insane, send conf matrix command
             #      and send stop predict immediately
             #      ml.py can never finish calculate conf matrix!
             #      added sleep 5 sec to wait for ml.py to finish
             #      but nmeed a much better solution
-            time.sleep(5)
+            #time.sleep(5)
         # BackSpace
         elif event.key()==QtCore.Qt.Key_Backspace:
             self.on_delete_frame()

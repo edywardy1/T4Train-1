@@ -150,7 +150,7 @@ def microphone_data():
             training_data_frame_counter = 0
 
             # get label
-            f = open(tmp_path+"current_label.txt", "r")
+            f = open(tmp_path + "current_label.txt", "r")
             current_label = f.read().strip()
             f.close()
 
